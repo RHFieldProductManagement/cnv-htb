@@ -82,7 +82,7 @@ available.
     nmcli connection add ifname baremetal type bridge con-name baremetal
     nmcli con add type bridge-slave ifname "$PUB_CONN" master baremetal
     nmcli con down "$PUB_CONN";pkill dhclient;dhclient baremetal
-    nmcli connection modify provisioning ipv4.addresses 172.22.0.3/24 ipv4.method manual
+    nmcli connection modify provisioning ipv4.addresses 172.22.0.1/24 ipv4.method manual
     nmcli con down provisioning
     nmcli con up provisioning
     nmcli con up baremetal
@@ -147,6 +147,21 @@ platform:
 
 The subnet specified by the `provisioningNetworkCIDR` should match the IP address (`ipv4.addresses`
 or `ipv6.addresses`) specified for the *provisioning* interface on the provisioner node.
+
+.7.3. https://openshift-kni.github.io/baremetal-deploy/4.4/Deployment.html#creating-the-openshift-manifests_ipi-install-prerequisites[Creating the OpenShift Container Platform manifests]
+{empty}
+
+IMPORTANT: This step will delete the copy of `install-config.yaml` in the `clusterconfigs` directory.
+Ensure that you keep a copy.
+
+When a non-zero number of worker nodes is configured, the control plane will not be schedulable, so
+the output will be:
+
+```
+[kni@installer ~]$ sudo ./openshift-baremetal-install --dir ~/clusterconfigs create manifests
+INFO Consuming Install Config from target directory 
+WARNING Discarding the Openshift Manifests that was provided in the target directory because its dependencies are dirty and it needs to be regenerated 
+```
 
 ==== User Provisioned Infrastructure
 
