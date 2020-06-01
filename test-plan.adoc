@@ -141,6 +141,10 @@ INFO Consuming Install Config from target directory
 WARNING Discarding the Openshift Manifests that was provided in the target directory because its dependencies are dirty and it needs to be regenerated 
 ```
 
+.9. https://openshift-kni.github.io/baremetal-deploy/4.4/Deployment.html#deploying-routers-on-worker-nodes_ipi-install-prerequisites[Deploying routers on worker nodes]
+
+At least two worker nodes are required for the high-touch beta, so this section can be ignored.
+
 ==== User Provisioned Infrastructure
 
 If the IPI installation
