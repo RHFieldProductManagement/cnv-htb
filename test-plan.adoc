@@ -150,12 +150,21 @@ At least two worker nodes are required for the high-touch beta, so this section 
 If the IPI installation
 method is not feasible, the "User Provisioned Infrastructure" (UPI) method can be used.  Bare-metal
 UPI installations are documented
-https://docs.openshift.com/container-platform/4.4/installing/installing_bare_metal/installing-bare-metal.html[here].
+https://access.redhat.com/documentation/en-us/openshift_container_platform/4.4/html/installing_on_bare_metal/[here].
 
 === OpenShift virtualization
 
-* Install OpenShift virtualization by following the steps https://docs.openshift.com/container-platform/4.4/cnv/cnv_install/installing-container-native-virtualization.html[here].
-** Install the `virtctl` utility. This tool is a CLI-based utility that allows you to interface with an OpenShift virtualization cluster and bridges some of the gaps between the virtualisation world and the world that Kubernetes was designed for. For example, the `virtctl` tool provides the capability of managing the lifecycle of virtual machines (starting, stopping, restarting, etc), providing access to the virtual consoles, uploading virtual machine images, as well as interfacing with Kubernetes constructs such as services and routes. It is installed using the Red Hat subscription manager tooling. Follow the installation instructions https://docs.openshift.com/container-platform/4.4/cnv/cnv_install/cnv-installing-virtctl.html[here] on the host with access to the OpenShift API.
+* Install OpenShift virtualization (sometimes known as Container-native virtualization) by following the steps
+  https://access.redhat.com/documentation/en-us/openshift_container_platform/4.4/html/container-native_virtualization/container-native-virtualization-installation[here].
+* Install the `virtctl` utility. This tool is a CLI-based utility that allows you to interface with
+  an OpenShift virtualization cluster and bridges some of the gaps between the virtualisation world
+  and the world that Kubernetes was designed for. For example, the `virtctl` tool provides the capability
+  of managing the lifecycle of virtual machines (starting, stopping, restarting, etc), providing access
+  to the virtual consoles, uploading virtual machine images, as well as interfacing with Kubernetes
+  constructs such as services and routes. It is installed using the Red Hat subscription manager
+  tooling. Follow the installation instructions
+  https://access.redhat.com/documentation/en-us/openshift_container_platform/4.4/html/container-native_virtualization/container-native-virtualization-installation#cnv-installing-virtctl[here]
+  on a host with access to the OpenShift API (such as the provisioner node).
 
 === OpenShift Container Storage
 
