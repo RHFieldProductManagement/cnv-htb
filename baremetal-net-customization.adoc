@@ -1,4 +1,4 @@
-= Bewm!
+= Network Customization During OpenShift Bare Metal IPI Installation
 
 == Adding a static route
 
@@ -134,9 +134,10 @@ editing.
 [kni@installer ~]$ jq . clusterconfigs/bootstrap.ign > /tmp/bootstrap.json
 ```
 
-Examine the new file and note `storage` section.
+Examine `/tmp/bootstrap.json` and note `storage` section.
 
 ```
+⋮
   "storage": {
     "files": [
       {
@@ -163,5 +164,102 @@ Examine the new file and note `storage` section.
         },
         "mode": 384
       },
+⋮
 ```
 
+The format is straightforward.  The stanzas shown above create 2 different files on the root
+filesystem, `+/etc/containers/registries.conf+` and
+`+/etc/ignition-machine-config-encapsulated.json+`.  Both are owned by `root`, and both have
+`0600` permissions, i.e. readable and writable only by their owner.  (*384* decimal is equal to
+*600* octal.)
+
+`+registries.conf+` is an empty file; there are no actual contents in the `source` item.
+The contents of `+ignition-machine-config-encapsulated.json+` are determined by the base64
+encoded string which follows the "preamble" of its `source`.
+
+```
+[kni@installer ~]$ echo -n ewogICJtZXRhZGF0YSI6IHsKICAgICJuYW1lIjogImJvb3RzdHJhcC1maXBzIgogIH0sCiAgInNwZWMiOiB7CiAgICAiY29uZmlnIjogewogICAgICAiaWduaXRpb24iOiB7CiAgICAgICAgInZlcnNpb24iOiAiMi4yLjAiCiAgICAgIH0KICAgIH0sCiAgICAia2VybmVsQXJndW1lbnRzIjogW10sCiAgICAiZmlwcyI6IGZhbHNlCiAgfQp9Cg== | base64 -d
+{
+  "metadata": {
+    "name": "bootstrap-fips"
+  },
+  "spec": {
+    "config": {
+      "ignition": {
+        "version": "2.2.0"
+      }
+    },
+    "kernelArguments": [],
+    "fips": false
+  }
+}
+```
+
+NOTE: `verification` can be used to check the hash values of files whose contents are pulled from
+external (HTTP) sources.
+
+Using ignition to add the network configuration files (`+ifcfg-baremetal+` and `+route-baremetal+`)
+requires the base64 encoded contents of those files.  Assuming that the files have been copied to
+`+~/network+`:
+
+```
+[kni@installer ~]$ base64 -w0 network/ifcfg-baremetal && echo
+VFlQRT1FdGhlcm5ldApQUk9YWV9NRVRIT0Q9bm9uZQpCUk9XU0VSX09OTFk9bm8KQk9PVFBST1RPPW5vbmUKSVBBRERSPTEwLjExLjE3My42OQpQUkVGSVg9MjQKREVGUk9VVEU9eWVzCklQVjRfRkFJTFVSRV9GQVRBTD1ubwpJUFY2SU5JVD15ZXMKSVBWNl9BVVRPQ09ORj15ZXMKSVBWNl9ERUZST1VURT15ZXMKSVBWNl9GQUlMVVJFX0ZBVEFMPW5vCklQVjZfQUREUl9HRU5fTU9ERT1zdGFibGUtcHJpdmFjeQpOQU1FPWJhcmVtZXRhbApVVUlEPTk0OTFkY2Q4LWM3ODItNDBhNC1hYzVjLTk3NTU3YzUxYzY0YQpERVZJQ0U9ZW5zMwpPTkJPT1Q9eWVzCkdBVEVXQVk9MTAuMTEuMTczLjI1NApETlMxPTEyNy4wLjAuMQpETlMyPTEwLjExLjE3My4xCg==
+
+[kni@installer ~]$ base64 -w0 network/route-baremetal && echo
+QUREUkVTUzA9MTkyLjE2OC4xMzUuMApORVRNQVNLMD0yNTUuMjU1LjI1NS4wCkdBVEVXQVkwPTEwLjExLjE3My4xCg==
+```
+
+NOTE: `-w0` prevents the `base64` command from wrapping its output.  Adding an `echo` at the end
+makes the output easier to distinguish by placing the prompt at the beginning of the following line.
+
+Edit `/tmp/bootstrap.json` and add stanzas for the network configuration files at the
+beginning of the `storage` section.  The `mode` of each file should be `0644`, which is expressed
+as *420* in decimal.
+
+```
+⋮
+  "storage": {
+    "files": [
+      {
+        "filesystem": "root",
+        "path": "/etc/sysconfig/network-scripts/ifcfg-baremetal",
+        "user": {
+          "name": "root"
+        },
+        "contents": {
+          "source": "data:text/plain;charset=utf-8;base64,VFlQRT1FdGhlcm5ldApQUk9YWV9NRVRIT0Q9bm9uZQpCUk9XU0VSX09OTFk9bm8KQk9PVFBST1RPPW5vbmUKSVBBRERSPTEwLjExLjE3My42OQpQUkVGSVg9MjQKREVGUk9VVEU9eWVzCklQVjRfRkFJTFVSRV9GQVRBTD1ubwpJUFY2SU5JVD15ZXMKSVBWNl9BVVRPQ09ORj15ZXMKSVBWNl9ERUZST1VURT15ZXMKSVBWNl9GQUlMVVJFX0ZBVEFMPW5vCklQVjZfQUREUl9HRU5fTU9ERT1zdGFibGUtcHJpdmFjeQpOQU1FPWJhcmVtZXRhbApVVUlEPTk0OTFkY2Q4LWM3ODItNDBhNC1hYzVjLTk3NTU3YzUxYzY0YQpERVZJQ0U9ZW5zMwpPTkJPT1Q9eWVzCkdBVEVXQVk9MTAuMTEuMTczLjI1NApETlMxPTEyNy4wLjAuMQpETlMyPTEwLjExLjE3My4xCg==",
+          "verification": {}
+        },
+        "mode": 420
+      },
+      {
+        "filesystem": "root",
+        "path": "/etc/sysconfig/network-scripts/route-baremetal",
+        "user": {
+          "name": "root"
+        },
+        "contents": {
+          "source": "data:text/plain;charset=utf-8;base64,QUREUkVTUzA9MTkyLjE2OC4xMzUuMApORVRNQVNLMD0yNTUuMjU1LjI1NS4wCkdBVEVXQVkwPTEwLjExLjE3My4xCg==",
+          "verification": {}
+        },
+        "mode": 420
+      },
+      {
+        "filesystem": "root",
+        "path": "/etc/containers/registries.conf",
+⋮
+```
+
+`jq` can be used again to write the edited JSON out in "compact" form as the new ignition file.
+
+```
+[kni@installer ~]$ jq -c . /tmp/bootstrap.json > clusterconfigs/bootstrap.ign
+```
+
+Now the OpenShift installation can be completed.
+
+```
+[kni@installer ~]$ openshift-baremetal-install --dir clusterconfigs --log-level debug create cluster
+⋮
+```
