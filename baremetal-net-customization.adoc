@@ -69,3 +69,99 @@ TIP: A useful method of initially creating these files is to use the `nmcli` com
 Enterprise Linux (not RHCOS) test VM.  NetworkManager will write create the required files in
 `+/etc/sysconfig/network-scripts+` from whence they can be copied to the provisioner node.
 
+*ifcfg-baremetal:*
+
+```
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+IPADDR=10.11.173.69
+PREFIX=24
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=baremetal
+UUID=9491dcd8-c782-40a4-ac5c-97557c51c64a
+DEVICE=ens3
+ONBOOT=yes
+GATEWAY=10.11.173.254
+DNS1=127.0.0.1
+DNS2=10.11.173.1
+```
+
+IMPORTANT: `127.0.0.1` must be the first DNS server listed.  The bootstrap VM will run a CoreDNS
+container, which will provide name resolution for internal cluster names.  This must be the first
+DNS server listed in `/etc/resolv.conf`.
+
+*route-baremetal:*
+
+```
+ADDRESS0=192.168.135.0
+NETMASK0=255.255.255.0
+GATEWAY0=10.11.173.1
+```
+
+During a normal bare metal IPI installation, the OpenShift installer creates and uses its ignition
+files as part of the `create cluster` step.  Modifying the bootstrap VM's ignition file requires
+that the ignition files be explicitly generated as a separate step.
+
+Assuming that an appropriate `+install-config.yaml+` file has been copied into the (otherwise empty)
+`+~/clusterconfigs+` directory, the following commands will generate the ignition files.
+
+```
+[kni@installer ~]$ *openshift-baremetal-install --dir clusterconfigs create manifests*
+INFO Consuming Install Config from target directory 
+WARNING Discarding the Openshift Manifests that was provided in the target directory because its dependencies are dirty and it needs to be regenerated
+
+[kni@installer ~]$ openshift-baremetal-install --dir clusterconfigs create ignition-configs
+INFO Consuming Master Machines from target directory 
+INFO Consuming Openshift Manifests from target directory 
+INFO Consuming Common Manifests from target directory 
+INFO Consuming OpenShift Install (Manifests) from target directory 
+INFO Consuming Worker Machines from target directory
+```
+
+The bootstrap VM's ignition file will be found at `+clusterconfigs/bootstrap.ign+`.  It is an
+unformatted JSON file.  The `jq` utility can be used to create a formatted version for easier
+editing.
+
+```
+[kni@installer ~]$ jq . clusterconfigs/bootstrap.ign > /tmp/bootstrap.json
+```
+
+Examine the new file and note `storage` section.
+
+```
+  "storage": {
+    "files": [
+      {
+        "filesystem": "root",
+        "path": "/etc/containers/registries.conf",
+        "user": {
+          "name": "root"
+        },
+        "contents": {
+          "source": "data:text/plain;charset=utf-8;base64,",
+          "verification": {}
+        },
+        "mode": 384
+      },
+      {
+        "filesystem": "root",
+        "path": "/etc/ignition-machine-config-encapsulated.json",
+        "user": {
+          "name": "root"
+        },
+        "contents": {
+          "source": "data:text/plain;charset=utf-8;base64,ewogICJtZXRhZGF0YSI6IHsKICAgICJuYW1lIjogImJvb3RzdHJhcC1maXBzIgogIH0sCiAgInNwZWMiOiB7CiAgICAiY29uZmlnIjogewogICAgICAiaWduaXRpb24iOiB7CiAgICAgICAgInZlcnNpb24iOiAiMi4yLjAiCiAgICAgIH0KICAgIH0sCiAgICAia2VybmVsQXJndW1lbnRzIjogW10sCiAgICAiZmlwcyI6IGZhbHNlCiAgfQp9Cg==",
+          "verification": {}
+        },
+        "mode": 384
+      },
+```
+
