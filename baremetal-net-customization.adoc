@@ -1,0 +1,71 @@
+= Bewm!
+
+== Adding a static route
+
+DHCP can be used to provision additional static routes to the OpenShift nodes.  The example below
+uses ISC `dhcpd`, but `dnsmasq` and (presumably) other DHCP servers offer similar functionality.
+
+This example adds a route to the `192.168.135.0/24` subnet via the router at `10.11.173.1`.
+
+First, add the DHCP option definition to `/etc/dhcp/dhcpd.conf`:
+
+```
+option classless-static-routes code 121 = array of unsigned integer 8;
+```
+
+This option can then be used in both `subnet` and `host` definitions.
+
+To provision the route to all hosts on the subnet:
+
+```
+subnet 10.11.173.0 netmask 255.255.255.0 {
+	authoritative;
+	option domain-name		"pemlab.rdu2.redhat.com";
+	option domain-name-servers	10.11.173.1, 8.8.8.8;
+	option ntp-servers		10.11.173.1;
+	option routers			10.11.173.254;
+	option classless-static-routes	24, 192, 168, 135, 10, 11, 173, 1;
+	range				10.11.173.101, 10.11.173.200;
+}
+```
+
+Or to provision the route to only certain hosts:
+
+```
+host openshift-master-0 {
+        hardware ethernet		52:54:00:de:77:92;
+        fixed-address			10.11.173.71;
+        option classless-static-routes	24, 192, 168, 135, 10, 11, 173, 1;
+}
+
+host openshift-master-1 {
+        hardware ethernet		52:54:00:c9:f7:48;
+        fixed-address			10.11.173.72;
+        option classless-static-routes	24, 192, 168, 135, 10, 11, 173, 1;
+}
+
+host openshift-master-2 {
+        hardware ethernet		52:54:00:b0:1e:0f;
+        fixed-address			10.11.173.73;
+        option classless-static-routes	24, 192, 168, 135, 10, 11, 173, 1;
+}
+```
+
+== The bootstrap VM
+
+In some cases, the bootstrap VM may also require a pre-determined IP address on the baremetal
+network.  DHCP cannot be used to assign a pre-determined address, because the bootstrap VM's MAC
+address is not known in advance.  Ignition (the configuration mechanism used by Red Hat Enterprise
+Linux CoreOS) can be used to customize the bootstrap VM's network configuration.
+
+Red Hat Enterprise Linux CoreOS (RHCOS) uses NetworkManager for network configuration, so
+customizing the RHCOS network configuration requires creating the appropriate file(s) in the
+`+/etc/sysconfig/network-scripts+` directory.
+
+These files assign a static IP address to the bootstrap VM's baremetal interface.  Because DHCP is
+not being used, they also set the DNS server(s), default route, and an additional static route.
+
+TIP: A useful method of initially creating these files is to use the `nmcli` command in a Red Hat
+Enterprise Linux (not RHCOS) test VM.  NetworkManager will write create the required files in
+`+/etc/sysconfig/network-scripts+` from whence they can be copied to the provisioner node.
+
