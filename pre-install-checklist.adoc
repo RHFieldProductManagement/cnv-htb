@@ -1,0 +1,52 @@
+= OpenShift Bare Metal IPI Pre-Install Checklist
+
+This document summarizes the preinstallation requirements for an OpenShift bare metal installer
+provisioned infrastructure (IPI) installation.  The resources listed in this document **must**
+exist within the environment (DNS records and DHCP reservations) or be known (MAC addresses and
+IPMI information) before OpenShift can be installed.
+
+[IMPORTANT]
+====
+The fully qualified name (FQDN) of each node is a combination of the nodes's name
+(`+openshift-master-#+` or `+openshift-worker-#+`) and the cluster's `+metadata.name+` and
+`+baseDomain+` (specified in `+install-config.yaml+`).
+
+For example, if `+install-config.yaml+` contains the following:
+```
+apiVersion: v1
+baseDomain: example.com
+metadata:
+  name: ocp
+⋮
+```
+Then the host names in a deployment with 2 worker nodes will be:
+
+* `+openshift-master-0.ocp.example.com+`
+* `+openshift-master-1.ocp.example.com+`
+* `+openshift-master-2.ocp.example.com+`
+* `+openshift-worker-0.ocp.example.com+`
+* `+openshift-worker-1.ocp.example.com+`
+====
+
+The following node-specific items must exist or be known.
+
+|===
+| Node | baremetal IP address | provisioning MAC | IPMI IP address | A/AAAA record exists? | PTR record exists? | IPMI credentials known? | DHCP reservation exists?
+
+| `+openshift-master-0+` |||||||
+| `+openshift-master-1+` |||||||
+| `+openshift-master-2+` |||||||
+| `+openshift-worker-0+` |||||||
+| `+openshift-worker-1+` |||||||
+| `⋮` |||||||
+|===
+
+DNS records (`A` or `AAAA`) must also exist for the following virtual IP addresses.  Reverse (`PTR`)
+records are recommended but not required.
+
+|===
+| Name | IP address | A/AAAA record exists?
+
+| `+api+` ||
+| `+ns1+` ||
+| `+*.apps+` ||
