@@ -359,7 +359,7 @@ This can be done from the UI under Storage -> Storage Classes -> Create Storage 
   reclaimPolicy: Delete
   volumeBindingMode: WaitForFirstConsumer
 
-*** As mentioned, you'll need to create a Physical Volume for each NFS directory you plan to utilise. This can be created at anytime prior to making a PVC against an NFS-backed PV.
+*** As mentioned, you'll need to create a Persistent Volume for each NFS directory you plan to utilise. This can be created at anytime prior to making a PVC against an NFS-backed PV.
 Again, this is not dynamic so they need to be created manually by you in advance. Using our simple NFS setup example above our PV claim, in YAML, might looks like this:
 
   apiVersion: v1
